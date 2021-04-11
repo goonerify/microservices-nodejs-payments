@@ -1,4 +1,4 @@
-export const stript = {
+export const stripe = {
   charges: {
     // Return a promise that automatically resolves to an object,
     // just like the actual create function

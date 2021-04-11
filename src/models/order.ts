@@ -2,6 +2,8 @@ import mongoose from "mongoose";
 import { updateIfCurrentPlugin } from "mongoose-update-if-current";
 import { OrderStatus } from "@oldledger/common";
 
+export { OrderStatus };
+
 interface OrderAttrs {
   id: string;
   version: number;

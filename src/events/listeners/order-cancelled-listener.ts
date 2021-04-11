@@ -1,12 +1,7 @@
-import {
-  OrderCancelledEvent,
-  Subjects,
-  Listener,
-  OrderStatus,
-} from "@oldledger/common";
+import { OrderCancelledEvent, Subjects, Listener } from "@oldledger/common";
 import { Message } from "node-nats-streaming";
 import { queueGroupName } from "./queue-group-name";
-import { Order } from "../../models/order";
+import { Order, OrderStatus } from "../../models/order";
 
 export class OrderCancelledListener extends Listener<OrderCancelledEvent> {
   subject: Subjects.OrderCancelled = Subjects.OrderCancelled;

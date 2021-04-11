@@ -4,10 +4,13 @@ import { OrderStatus } from "@oldledger/common";
 import { app } from "../../app";
 import { Order } from "../../models/order";
 import { stripe } from "../../stripe";
+import { Payment } from "../../models/payment";
 
 // Inform jest that we are mocking this file with any
 // file of the same name within a __mocks__ directory
-jest.mock("../../stripe.ts");
+
+// Uncomment line below to activate mock implementation
+// jest.mock("../../stripe.ts");
 
 it("returns a 404 when purchasing an order that does not exist", async () => {
   await request(app)
@@ -62,13 +65,47 @@ it("returns a 400 when purchasing a cancelled order", async () => {
     .expect(400);
 });
 
+// // Mock Implementation without Stripe
+// // Rename __mocks__/stripe.ts.old to __mocks__/stripe.ts to use
+// it("returns a 201 with valid inputs", async () => {
+//   const userId = mongoose.Types.ObjectId().toHexString();
+//   const order = Order.build({
+//     id: mongoose.Types.ObjectId().toHexString(),
+//     userId,
+//     version: 0,
+//     price: 20,
+//     status: OrderStatus.Created,
+//   });
+//   await order.save();
+
+//   await request(app)
+//     .post("/api/payments")
+//     .set("Cookie", global.signin(userId))
+//     .send({
+//       token: "tok_visa",
+//       orderId: order.id,
+//     })
+//     .expect(201);
+
+//   const chargeOptions = (stripe.charges.create as jest.Mock).mock.calls[0][0];
+
+//   expect(chargeOptions.source).toEqual("tok_visa");
+//   expect(chargeOptions.amount).toEqual(20 * 100);
+//   expect(chargeOptions.currency).toEqual("usd");
+
+//   const payment = await Payment.findOne({ orderId: order.id });
+//   expect(payment!.stripeId).toEqual("mock-stripe-id");
+// });
+
+// Realistic implementation with Stripe API
 it("returns a 201 with valid inputs", async () => {
   const userId = mongoose.Types.ObjectId().toHexString();
+  const price = Math.floor(Math.random() * 100000);
   const order = Order.build({
     id: mongoose.Types.ObjectId().toHexString(),
     userId,
     version: 0,
-    price: 20,
+    price,
     status: OrderStatus.Created,
   });
   await order.save();
@@ -82,9 +119,19 @@ it("returns a 201 with valid inputs", async () => {
     })
     .expect(201);
 
-  const chargeOptions = (stripe.charges.create as jest.Mock).mock.calls[0][0];
+  const stripeCharges = await stripe.charges.list({ limit: 50 });
+  // find will evaluate to a value or to undefined
+  const stripeCharge = stripeCharges.data.find((charge) => {
+    return charge.amount === price * 100;
+  });
 
-  expect(chargeOptions.source).toEqual("tok_visa");
-  expect(chargeOptions.amount).toEqual(20 * 100);
-  expect(chargeOptions.currency).toEqual("usd");
+  expect(stripeCharge).toBeDefined();
+  expect(stripeCharge!.currency).toEqual("usd");
+
+  // findOne will evaluate to a value or null
+  const payment = await Payment.findOne({
+    orderId: order.id,
+    stripeId: stripeCharge!.id,
+  });
+  expect(payment).not.toBeNull();
 });

@@ -14,6 +14,14 @@ declare global {
 // to our mock implementation of the same file name
 jest.mock("../nats-wrapper.ts");
 
+// FIXME: Don't hardcode API tokens
+// We don't place this env variable in the beforeAll hook because
+// it's used as soon as we load the stripe.ts file into our src directory
+
+// Comment out line below when using 'Mock Implementation without Stripe API' test suite
+process.env.STRIPE_KEY =
+  "sk_test_51If4DQGmbPFPG9W4sGLaMoSx4Y43ObwrFzDvEVaI020wrLX7mysnEXeiEHggKxi0ndk6I9PJeZyDpCrZn2QOe9sO00jKjKb7RZ";
+
 let mongo: any;
 
 beforeAll(async () => {

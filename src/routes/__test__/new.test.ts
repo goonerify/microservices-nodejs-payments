@@ -110,7 +110,7 @@ it("returns a 201 with valid inputs", async () => {
   });
   await order.save();
 
-  await request(app)
+  const paymentResponse = await request(app)
     .post("/api/payments")
     .set("Cookie", global.signin(userId))
     .send({
@@ -119,19 +119,18 @@ it("returns a 201 with valid inputs", async () => {
     })
     .expect(201);
 
+  const { id: paymentId } = paymentResponse.body;
+
+  const payment = await Payment.findById(paymentId);
+  // findById() will evaluate to a value or null
+  expect(payment).not.toBeNull();
+
   const stripeCharges = await stripe.charges.list({ limit: 50 });
-  // find will evaluate to a value or to undefined
   const stripeCharge = stripeCharges.data.find((charge) => {
-    return charge.amount === price * 100;
+    return charge.id === payment!.stripeId;
   });
 
+  // find() will evaluate to a value or to undefined
   expect(stripeCharge).toBeDefined();
   expect(stripeCharge!.currency).toEqual("usd");
-
-  // findOne will evaluate to a value or null
-  const payment = await Payment.findOne({
-    orderId: order.id,
-    stripeId: stripeCharge!.id,
-  });
-  expect(payment).not.toBeNull();
 });
